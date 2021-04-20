@@ -1,6 +1,8 @@
 package com.example.demo.security;
 
 import com.auth0.jwt.JWT;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,6 +21,8 @@ import static com.auth0.jwt.algorithms.Algorithm.HMAC512;
 @Component
 public class JWTAuthenticationVerficationFilter extends BasicAuthenticationFilter {
 
+    private static final Logger log = LoggerFactory.getLogger(JWTAuthenticationVerficationFilter.class);
+
     public JWTAuthenticationVerficationFilter(AuthenticationManager authManager) {
         super(authManager);
     }
@@ -29,6 +33,7 @@ public class JWTAuthenticationVerficationFilter extends BasicAuthenticationFilte
         String header = req.getHeader(SecurityConstants.HEADER_STRING);
 
         if (header == null || !header.startsWith(SecurityConstants.TOKEN_PREFIX)) {
+            log.warn("Warning Authentication Verification. Wrong header in doFilterInternal.");
             chain.doFilter(req, res);
             return;
         }
@@ -46,10 +51,13 @@ public class JWTAuthenticationVerficationFilter extends BasicAuthenticationFilte
                     .verify(token.replace(SecurityConstants.TOKEN_PREFIX, ""))
                     .getSubject();
             if (user != null) {
+                log.info("Successful Authentication Verification.");
                 return new UsernamePasswordAuthenticationToken(user, null, new ArrayList<>());
             }
+            log.error("Error Authentication Verification. User is null.");
             return null;
         }
+        log.error("Error Authentication Verification. Token is null.");
         return null;
     }
 
